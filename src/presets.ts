@@ -6,7 +6,9 @@ export type StyleName =
   | "frost"
   | "plasma"
   | "chrome"
-  | "opal";
+  | "opal"
+  | "blueDrop"
+  | "violetEmber";
 
 export type OrbParams = {
   style: StyleName;
@@ -255,6 +257,64 @@ export const stylePresets: Record<StyleName, StylePreset> = {
     canvasColor: "#000000",
     glowColor: "#6F9EE8",
   },
+  blueDrop: {
+    ...basePreset,
+    speed: 0.9,
+    radius: 0.74,
+    contourDeform: 0.08,
+    zoom: 0.48,
+    warp: 2.65,
+    ridgeAmt: 0.42,
+    sharp: 2.4,
+    shade: 0.16,
+    sheen: 0.22,
+    gloss: 0.42,
+    glassOpacity: 0.66,
+    shellMidAlpha: 0.32,
+    shellEdgeAlpha: 0.24,
+    exposure: 1.24,
+    colorA: "#020B1D",
+    colorB: "#0756B8",
+    colorC: "#1EC8FF",
+    colorD: "#DDFBFF",
+    highlightColor: "#EAFBFF",
+    shellInner: "#F6FDFF",
+    shellMid: "#4FD7FF",
+    shellEdge: "#466DFF",
+    sheenColor: "#DDFBFF",
+    specColor: "#A8D9FF",
+    canvasColor: "#010207",
+    glowColor: "#168DFF",
+  },
+  violetEmber: {
+    ...basePreset,
+    speed: 1.12,
+    radius: 0.72,
+    contourDeform: 0.04,
+    zoom: 0.58,
+    warp: 4.7,
+    ridgeAmt: 0.73,
+    sharp: 3.3,
+    shade: 0.18,
+    sheen: 0.2,
+    gloss: 0.34,
+    glassOpacity: 0.62,
+    shellMidAlpha: 0.28,
+    shellEdgeAlpha: 0.24,
+    exposure: 1.28,
+    colorA: "#100016",
+    colorB: "#4A0E8F",
+    colorC: "#A52EFF",
+    colorD: "#F1A7FF",
+    highlightColor: "#FFD6FF",
+    shellInner: "#FCF5FF",
+    shellMid: "#C257FF",
+    shellEdge: "#6C2DFF",
+    sheenColor: "#F8E6FF",
+    specColor: "#D4B7FF",
+    canvasColor: "#030006",
+    glowColor: "#A52EFF",
+  },
 };
 
 export const styleLabels: Record<StyleName, string> = {
@@ -266,6 +326,8 @@ export const styleLabels: Record<StyleName, string> = {
   plasma: "神经电浆",
   chrome: "液态铬",
   opal: "虹彩欧泊",
+  blueDrop: "蓝晶液滴",
+  violetEmber: "紫焰流核",
 };
 
 export const styleNames: readonly StyleName[] = [
@@ -277,6 +339,8 @@ export const styleNames: readonly StyleName[] = [
   "plasma",
   "chrome",
   "opal",
+  "blueDrop",
+  "violetEmber",
 ];
 
 export const styleFlowIndexes: Record<StyleName, number> = {
@@ -288,6 +352,8 @@ export const styleFlowIndexes: Record<StyleName, number> = {
   opal: 13,
   spectrum: 14,
   frost: 15,
+  blueDrop: 20,
+  violetEmber: 21,
 };
 
 export const effectDefaults: OrbParams = {

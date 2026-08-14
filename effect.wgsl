@@ -2,7 +2,8 @@
 //
 // The local presets use independent spatial models for Siri-like sheets,
 // symmetric colour waves, aurora curtains, frost flow, neural interference,
-// liquid chrome, opal interference, and a voice membrane. The
+// liquid chrome, opal interference, a voice membrane, a blue liquid drop, and
+// a violet molten core. The
 // legacy liquid bank remains below for compatibility with older shared shader
 // code, but is not exposed as an editor preset.
 //
@@ -664,6 +665,66 @@ fn glsVoiceWaveFluid(p: vec2<f32>, t: f32) -> vec3<f32> {
   return glsFinishPresetFluid(color, p);
 }
 
+fn glsBlueDropFluid(p: vec2<f32>, t: f32) -> vec3<f32> {
+  // Slow diagonal advection keeps the broad liquid bodies coherent. The two
+  // shear waves replace the reference orb's circular, looped point motion.
+  let depth = sqrt(max(1.0 - clamp(dot(p, p), 0.0, 1.0), 0.0));
+  var q = p * mix(0.72, 1.0, depth * 0.62 + 0.38);
+  q = glsRotate(q, -0.24 + 0.06 * sin(t * 0.17));
+  let scale = 1.0 + u.zoom * 1.12;
+  let blur = 0.012 + 0.006 * u.zoom;
+  let driftA = lqFbm(q * 1.28 + vec2<f32>(t * 0.095, -t * 0.034), blur * 1.28);
+  let driftB = lqFbm(glsRotate(q, 1.08) * 1.62
+                     + vec2<f32>(-t * 0.042, t * 0.078), blur * 1.62);
+  var flowed = q + vec2<f32>(driftA.x - 0.5, driftB.x - 0.5)
+                 * (0.24 + u.warp * 0.1);
+  flowed.x = flowed.x + sin(flowed.y * 2.15 + t * 0.24) * (0.035 + u.warp * 0.012);
+  flowed.y = flowed.y + sin(flowed.x * 1.38 - t * 0.18) * (0.045 + u.warp * 0.01);
+  let body = lqFbm(flowed * scale + vec2<f32>(t * 0.025, -t * 0.018), blur * scale);
+  let marble = lqRidgeS(lqFbm(flowed * (1.72 + u.zoom * 0.9)
+                              + vec2<f32>(2.7, -t * 0.035),
+                              blur * (1.72 + u.zoom * 0.9)),
+                            0.8 + u.sharp * 0.46);
+  let value = clamp(mix(body.x, body.x * 0.62 + marble * 0.58, u.ridgeAmt), 0.0, 1.0);
+  var color = lqRamp(value, u.colorA.rgb, u.colorB.rgb, u.colorC.rgb, u.colorD.rgb);
+  let light = pow(max(dot(normalize(vec3<f32>(p, depth)),
+                          normalize(vec3<f32>(-0.48, 0.62, 0.92))), 0.0), 3.2);
+  color = mix(color, u.highlightColor.rgb, light * (0.035 + 0.05 * u.shade));
+  color = color * (0.74 + 0.26 * depth);
+  return glsFinishPresetFluid(color, p);
+}
+
+fn glsVioletEmberFluid(p: vec2<f32>, t: f32) -> vec3<f32> {
+  // A radial twist and two crossing drift fields make heavy molten folds. This
+  // moves as a breathing spiral instead of the reference orb's closed circles.
+  let scale = 1.08 + u.zoom * 1.18;
+  let blur = 0.011 + 0.005 * u.zoom;
+  let radius = length(p);
+  let twist = t * 0.055 + radius * (0.72 + u.warp * 0.11)
+              + 0.08 * sin(t * 0.31 + radius * 4.0);
+  let q = glsRotate(p * scale, twist);
+  let low = lqFbm(q * 1.18 + vec2<f32>(t * 0.068, -t * 0.105), blur * 1.18);
+  let cross = lqFbm(glsRotate(q, -1.12) * 1.52
+                    + vec2<f32>(-t * 0.094, t * 0.042)
+                    + vec2<f32>(low.x * 1.35, -low.x * 0.72), blur * 1.52);
+  let warped = q + vec2<f32>(low.x - 0.5, cross.x - 0.5)
+                   * (0.3 + u.warp * 0.12);
+  let melt = lqFbm(warped * 1.34
+                   + vec2<f32>(cross.x * 1.48, low.x * 1.12), blur * 1.34);
+  let veins = lqRidgeS(lqFbm(warped * (2.05 + u.zoom * 0.72)
+                             + vec2<f32>(-2.1, t * 0.052),
+                             blur * (2.05 + u.zoom * 0.72)),
+                           0.82 + u.sharp * 0.58);
+  let heat = smoothstep(0.18, 0.92,
+                        melt.x * (0.72 - u.ridgeAmt * 0.16)
+                        + veins * (0.32 + u.ridgeAmt * 0.5));
+  var color = lqRamp(heat, u.colorA.rgb, u.colorB.rgb, u.colorC.rgb, u.colorD.rgb);
+  let pulse = 0.94 + 0.06 * sin(t * 0.44 + melt.x * 5.0);
+  color = color * pulse;
+  color = mix(color, u.highlightColor.rgb, pow(veins, 4.0) * 0.045);
+  return glsFinishPresetFluid(color, p);
+}
+
 fn glsPresetFluid(p: vec2<f32>, style: i32, t: f32) -> vec3<f32> {
   if (style == 9) { return glsSiriFluid(p, t); }
   if (style == 10) { return glsAuroraFluid(p, t); }
@@ -673,6 +734,8 @@ fn glsPresetFluid(p: vec2<f32>, style: i32, t: f32) -> vec3<f32> {
   if (style == 14) { return glsSpectrumFluid(p, t); }
   if (style == 15) { return glsFrostFluid(p, t); }
   if (style == 19) { return glsVoiceWaveFluid(p, t); }
+  if (style == 20) { return glsBlueDropFluid(p, t); }
+  if (style == 21) { return glsVioletEmberFluid(p, t); }
   return glsFrostFluid(p, t);
 }
 

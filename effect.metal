@@ -953,6 +953,71 @@ metal::float3 glsVoiceWaveFluid(
     return _e175;
 }
 
+metal::float3 glsBlueDropFluid(
+    metal::float2 p,
+    float t,
+    constant Uniforms& u
+) {
+    float depth = metal::sqrt(metal::max(1.0 - metal::clamp(metal::dot(p, p), 0.0, 1.0), 0.0));
+    metal::float2 q = p * metal::mix(0.72, 1.0, depth * 0.62 + 0.38);
+    q = glsRotate(q, -0.24 + 0.06 * metal::sin(t * 0.17));
+    float scale = 1.0 + u.zoom * 1.12;
+    float blur = 0.012 + 0.006 * u.zoom;
+    metal::float2 driftA = lqFbm(q * 1.28 + metal::float2(t * 0.095, -t * 0.034), blur * 1.28);
+    metal::float2 driftB = lqFbm(glsRotate(q, 1.08) * 1.62
+                                 + metal::float2(-t * 0.042, t * 0.078), blur * 1.62);
+    metal::float2 flowed = q + metal::float2(driftA.x - 0.5, driftB.x - 0.5)
+                               * (0.24 + u.warp * 0.1);
+    flowed.x += metal::sin(flowed.y * 2.15 + t * 0.24) * (0.035 + u.warp * 0.012);
+    flowed.y += metal::sin(flowed.x * 1.38 - t * 0.18) * (0.045 + u.warp * 0.01);
+    metal::float2 body = lqFbm(flowed * scale + metal::float2(t * 0.025, -t * 0.018), blur * scale);
+    float marbleScale = 1.72 + u.zoom * 0.9;
+    float marble = lqRidgeS(lqFbm(flowed * marbleScale
+                                  + metal::float2(2.7, -t * 0.035), blur * marbleScale),
+                            0.8 + u.sharp * 0.46);
+    float value = metal::clamp(metal::mix(body.x, body.x * 0.62 + marble * 0.58, u.ridgeAmt), 0.0, 1.0);
+    metal::float3 color = lqRamp(value, u.colorA.xyz, u.colorB.xyz, u.colorC.xyz, u.colorD.xyz, u);
+    metal::float3 surface = metal::normalize(metal::float3(p.x, p.y, depth));
+    metal::float3 direction = metal::normalize(metal::float3(-0.48, 0.62, 0.92));
+    float light = metal::pow(metal::max(metal::dot(surface, direction), 0.0), 3.2);
+    color = metal::mix(color, u.highlightColor.xyz, light * (0.035 + 0.05 * u.shade));
+    color *= 0.74 + 0.26 * depth;
+    return glsFinishPresetFluid(color, p, u);
+}
+
+metal::float3 glsVioletEmberFluid(
+    metal::float2 p,
+    float t,
+    constant Uniforms& u
+) {
+    float scale = 1.08 + u.zoom * 1.18;
+    float blur = 0.011 + 0.005 * u.zoom;
+    float radius = metal::length(p);
+    float twist = t * 0.055 + radius * (0.72 + u.warp * 0.11)
+                  + 0.08 * metal::sin(t * 0.31 + radius * 4.0);
+    metal::float2 q = glsRotate(p * scale, twist);
+    metal::float2 low = lqFbm(q * 1.18 + metal::float2(t * 0.068, -t * 0.105), blur * 1.18);
+    metal::float2 cross = lqFbm(glsRotate(q, -1.12) * 1.52
+                                + metal::float2(-t * 0.094, t * 0.042)
+                                + metal::float2(low.x * 1.35, -low.x * 0.72), blur * 1.52);
+    metal::float2 warped = q + metal::float2(low.x - 0.5, cross.x - 0.5)
+                              * (0.3 + u.warp * 0.12);
+    metal::float2 melt = lqFbm(warped * 1.34
+                               + metal::float2(cross.x * 1.48, low.x * 1.12), blur * 1.34);
+    float veinScale = 2.05 + u.zoom * 0.72;
+    float veins = lqRidgeS(lqFbm(warped * veinScale
+                                 + metal::float2(-2.1, t * 0.052), blur * veinScale),
+                           0.82 + u.sharp * 0.58);
+    float heat = metal::smoothstep(0.18, 0.92,
+                                   melt.x * (0.72 - u.ridgeAmt * 0.16)
+                                   + veins * (0.32 + u.ridgeAmt * 0.5));
+    metal::float3 color = lqRamp(heat, u.colorA.xyz, u.colorB.xyz, u.colorC.xyz, u.colorD.xyz, u);
+    float pulse = 0.94 + 0.06 * metal::sin(t * 0.44 + melt.x * 5.0);
+    color *= pulse;
+    color = metal::mix(color, u.highlightColor.xyz, metal::pow(veins, 4.0) * 0.045);
+    return glsFinishPresetFluid(color, p, u);
+}
+
 metal::float3 glsPresetFluid(
     metal::float2 p_16,
     int style,
@@ -990,6 +1055,12 @@ metal::float3 glsPresetFluid(
     if (style == 19) {
         metal::float3 _e26 = glsVoiceWaveFluid(p_16, t_13, u);
         return _e26;
+    }
+    if (style == 20) {
+        return glsBlueDropFluid(p_16, t_13, u);
+    }
+    if (style == 21) {
+        return glsVioletEmberFluid(p_16, t_13, u);
     }
     metal::float3 _e27 = glsFrostFluid(p_16, t_13, u);
     return _e27;

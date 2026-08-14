@@ -25,12 +25,14 @@ import {
 
 import posterUrl from "../poster.png";
 import auroraPreviewUrl from "./assets/presets/aurora.png";
+import blueDropPreviewUrl from "./assets/presets/blueDrop.png";
 import chromePreviewUrl from "./assets/presets/chrome.png";
 import frostPreviewUrl from "./assets/presets/frost.png";
 import opalPreviewUrl from "./assets/presets/opal.png";
 import plasmaPreviewUrl from "./assets/presets/plasma.png";
 import siriPreviewUrl from "./assets/presets/siri.png";
 import spectrumPreviewUrl from "./assets/presets/spectrum.png";
+import violetEmberPreviewUrl from "./assets/presets/violetEmber.png";
 import voiceWavePreviewUrl from "./assets/presets/voiceWave.png";
 import { createSwiftExport, createWebExport } from "./code-export";
 import { createOrbRenderer } from "./orb-renderer";
@@ -58,6 +60,8 @@ const stylePreviewUrls: Record<StyleName, string> = {
   plasma: plasmaPreviewUrl,
   chrome: chromePreviewUrl,
   opal: opalPreviewUrl,
+  blueDrop: blueDropPreviewUrl,
+  violetEmber: violetEmberPreviewUrl,
 };
 
 type NumericKey = {
@@ -104,11 +108,15 @@ const ridgeStyles: readonly StyleName[] = [
   "aurora",
   "frost",
   "plasma",
+  "blueDrop",
+  "violetEmber",
 ];
 const sharpStyles: readonly StyleName[] = [
   "frost",
   "plasma",
   "chrome",
+  "blueDrop",
+  "violetEmber",
 ];
 
 const numericSpecs: readonly NumericSpec[] = [
