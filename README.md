@@ -2,6 +2,8 @@
 
 一个使用 React、WebGPU/WGSL 和 Toolcraft UI 构建的实时液态玻璃球编辑器。
 
+在线使用：[https://lersent001.github.io/liquid-orb-editor/](https://lersent001.github.io/liquid-orb-editor/)
+
 ## 功能
 
 - 8 个可编辑的动态球体预设
