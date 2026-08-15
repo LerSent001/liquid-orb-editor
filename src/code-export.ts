@@ -36,12 +36,25 @@ export function createWebExport(params: OrbParams): string {
     const uniformSeed = ${JSON.stringify(uniformSeed)};
     const canvas = document.querySelector("#orb");
     const status = document.querySelector("#status");
+    let animationFrame = 0;
+    let device = null;
+    let stopped = false;
+
+    function stopWithError(error) {
+      if (stopped) return;
+      stopped = true;
+      cancelAnimationFrame(animationFrame);
+      device?.destroy();
+      status.hidden = false;
+      status.textContent = error instanceof Error ? error.message : String(error);
+      console.error(error);
+    }
 
     async function start() {
       if (!navigator.gpu) throw new Error("当前环境不支持 WebGPU");
       const adapter = await navigator.gpu.requestAdapter();
       if (!adapter) throw new Error("未找到可用的 WebGPU 适配器");
-      const device = await adapter.requestDevice();
+      device = await adapter.requestDevice();
       const context = canvas.getContext("webgpu");
       if (!context) throw new Error("无法创建 WebGPU 画布上下文");
 
@@ -71,43 +84,59 @@ export function createWebExport(params: OrbParams): string {
       });
       const startedAt = performance.now();
 
-      function frame(now) {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-        const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-        }
-        values[0] = width;
-        values[1] = height;
-        values[2] = (now - startedAt) / 1000;
-        device.queue.writeBuffer(uniformBuffer, 0, values);
+      device.lost.then((info) => {
+        stopWithError(new Error(\`WebGPU 设备已断开：\${info.message || info.reason}\`));
+      });
+      device.addEventListener("uncapturederror", (event) => {
+        event.preventDefault();
+        stopWithError(new Error(\`WebGPU 渲染错误：\${event.error.message}\`));
+      });
 
-        const encoder = device.createCommandEncoder();
-        const pass = encoder.beginRenderPass({
-          colorAttachments: [{
-            view: context.getCurrentTexture().createView(),
-            clearValue: { r: 0, g: 0, b: 0, a: 0 },
-            loadOp: "clear",
-            storeOp: "store",
-          }],
-        });
-        pass.setPipeline(pipeline);
-        pass.setBindGroup(0, bindGroup);
-        pass.draw(3);
-        pass.end();
-        device.queue.submit([encoder.finish()]);
-        requestAnimationFrame(frame);
+      function frame(now) {
+        if (stopped) return;
+        try {
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+          const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+          if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+          }
+          values[0] = width;
+          values[1] = height;
+          values[2] = (now - startedAt) / 1000;
+          device.queue.writeBuffer(uniformBuffer, 0, values);
+
+          const encoder = device.createCommandEncoder();
+          const pass = encoder.beginRenderPass({
+            colorAttachments: [{
+              view: context.getCurrentTexture().createView(),
+              clearValue: { r: 0, g: 0, b: 0, a: 0 },
+              loadOp: "clear",
+              storeOp: "store",
+            }],
+          });
+          pass.setPipeline(pipeline);
+          pass.setBindGroup(0, bindGroup);
+          pass.draw(3);
+          pass.end();
+          device.queue.submit([encoder.finish()]);
+          animationFrame = requestAnimationFrame(frame);
+        } catch (error) {
+          stopWithError(error);
+        }
       }
 
-      requestAnimationFrame(frame);
+      animationFrame = requestAnimationFrame(frame);
     }
 
+    window.addEventListener("pagehide", () => {
+      stopped = true;
+      cancelAnimationFrame(animationFrame);
+      device?.destroy();
+    }, { once: true });
     start().catch((error) => {
-      status.hidden = false;
-      status.textContent = error instanceof Error ? error.message : String(error);
-      console.error(error);
+      stopWithError(error);
     });
   </script>
 </body>

@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "verify": "node scripts/verify-exports.mjs",
+    "build": "node scripts/verify-exports.mjs && tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {

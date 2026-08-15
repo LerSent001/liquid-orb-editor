@@ -19,6 +19,15 @@ export function createOrbRenderer({
   let animationFrame = 0;
   let device: GPUDevice | null = null;
   let readyNotified = false;
+  let failed = false;
+
+  function fail(error: Error): void {
+    if (disposed || failed) return;
+    failed = true;
+    cancelAnimationFrame(animationFrame);
+    device?.destroy();
+    onError(error);
+  }
 
   async function start(): Promise<void> {
     if (!navigator.gpu) {
@@ -84,9 +93,11 @@ export function createOrbRenderer({
     const startedAt = performance.now();
 
     device.lost.then((info) => {
-      if (!disposed) {
-        onError(new Error(`WebGPU 设备已断开：${info.message || info.reason}`));
-      }
+      fail(new Error(`WebGPU 设备已断开：${info.message || info.reason}`));
+    });
+    device.addEventListener("uncapturederror", (event) => {
+      event.preventDefault();
+      fail(new Error(`WebGPU 渲染错误：${event.error.message}`));
     });
 
     function resize(): void {
@@ -101,7 +112,7 @@ export function createOrbRenderer({
     }
 
     function frame(now: number): void {
-      if (disposed || !device) {
+      if (disposed || failed || !device) {
         return;
       }
 
@@ -138,8 +149,7 @@ export function createOrbRenderer({
         }
         animationFrame = requestAnimationFrame(frame);
       } catch (error) {
-        disposed = true;
-        onError(error instanceof Error ? error : new Error(String(error)));
+        fail(error instanceof Error ? error : new Error(String(error)));
       }
     }
 
@@ -147,9 +157,7 @@ export function createOrbRenderer({
   }
 
   start().catch((error: unknown) => {
-    if (!disposed) {
-      onError(error instanceof Error ? error : new Error(String(error)));
-    }
+    fail(error instanceof Error ? error : new Error(String(error)));
   });
 
   return () => {

@@ -197,11 +197,7 @@ function readParamsFromHash(): OrbParams {
   const search = new URLSearchParams(window.location.hash.slice(1));
   const style = search.get("style");
 
-  if (style && !styleNames.includes(style as StyleName)) {
-    return params;
-  }
-
-  if (style) {
+  if (style && styleNames.includes(style as StyleName)) {
     params.style = style as StyleName;
     Object.assign(params, stylePresets[params.style]);
   }
@@ -312,6 +308,18 @@ export function App(): React.JSX.Element {
 
     return () => window.clearTimeout(timeout);
   }, [params, previewMode, sceneText]);
+
+  React.useEffect(() => {
+    const syncFromHash = () => {
+      setParams(readParamsFromHash());
+      setPreviewMode(readPreviewModeFromHash());
+      setSceneText(readSceneTextFromHash());
+      setPreviewScale(1);
+    };
+
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, []);
 
   React.useEffect(() => {
     document.documentElement.style.setProperty("--orb-canvas-color", params.canvasColor);
