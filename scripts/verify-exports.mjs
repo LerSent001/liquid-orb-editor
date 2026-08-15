@@ -20,6 +20,53 @@ try {
     readFile(new URL("../effect.wgsl", import.meta.url), "utf8"),
     readFile(new URL("../effect.metal", import.meta.url), "utf8"),
   ]);
+  const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+
+  const sceneScaleMatch = styles.match(
+    /\.orb-stage\[data-preview-mode="scene"\] \.orb-canvas,[\s\S]*?transform:\s*scale\(([\d.]+)\);/,
+  );
+  assert.ok(sceneScaleMatch, "场景画布缩放配置缺失");
+  const sceneScale = Number(sceneScaleMatch[1]);
+  assert.ok(
+    presets.orbRadiusRange.max * sceneScale <= 1,
+    "场景画布会裁掉最大半径球体的边缘参数",
+  );
+
+  function extractOpticalWeights(source, patterns, backend) {
+    return Object.fromEntries(
+      Object.entries(patterns).map(([name, pattern]) => {
+        const match = source.match(pattern);
+        assert.ok(match, `${backend}: ${name} 光学权重缺失`);
+        return [name, match.slice(1).map(Number)];
+      }),
+    );
+  }
+
+  const wgslOpticalWeights = extractOpticalWeights(
+    wgsl,
+    {
+      inner: /opticalRim \* u\.glassOpacity \* ([\d.]+)/,
+      dispersion: /\* \(([\d.]+) \+ ([\d.]+) \* u\.shellEdgeAlpha\)/,
+      key: /clamp\(u\.sheen, 0\.0, 2\.0\) \* ([\d.]+);/,
+      fill: /clamp\(u\.sheen, 0\.0, 2\.0\) \* ([\d.]+);\n\s*col = glsOver\(col, u\.sheenColor/,
+    },
+    "WGSL",
+  );
+  const metalOpticalWeights = extractOpticalWeights(
+    metal,
+    {
+      inner: /\(opticalRim \* _e247\) \* ([\d.]+)\)/,
+      dispersion: /\* \(([\d.]+) \+ \(([\d.]+) \* _e275\)\)/,
+      key: /metal::clamp\(_e332, 0\.0, 2\.0\)\) \* ([\d.]+);/,
+      fill: /metal::clamp\(_e345, 0\.0, 2\.0\)\) \* ([\d.]+);/,
+    },
+    "Metal",
+  );
+  assert.deepEqual(metalOpticalWeights, wgslOpticalWeights, "WebGPU 与 Metal 光学权重不一致");
+  assert.ok(wgslOpticalWeights.inner[0] >= 0.1, "玻璃底色权重过低，颜色控件不可见");
+  assert.ok(wgslOpticalWeights.dispersion[0] >= 0.1, "色散底色权重过低，颜色控件不可见");
+  assert.ok(wgslOpticalWeights.key[0] >= 1, "主高光权重过低，颜色控件不可见");
+  assert.ok(wgslOpticalWeights.fill[0] >= 0.8, "辅高光权重过低，颜色控件不可见");
 
   assert.ok(presets.styleNames.length > 0, "至少需要一个预设");
   assert.equal(

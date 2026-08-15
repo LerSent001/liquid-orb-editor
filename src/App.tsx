@@ -39,6 +39,7 @@ import { createOrbRenderer } from "./orb-renderer";
 import {
   effectDefaults,
   initialParams,
+  orbRadiusRange,
   type OrbParams,
   styleLabels,
   styleNames,
@@ -121,7 +122,7 @@ const sharpStyles: readonly StyleName[] = [
 
 const numericSpecs: readonly NumericSpec[] = [
   { key: "speed", label: "速度", min: 0, max: 3, step: 0.01 },
-  { key: "radius", label: "半径", min: 0.3, max: 0.95, step: 0.01 },
+  { key: "radius", label: "半径", ...orbRadiusRange, step: 0.01 },
   { key: "contourDeform", label: "轮廓形变", min: 0, max: 1, step: 0.01 },
   { key: "zoom", label: "缩放", min: 0.05, max: 1, step: 0.01 },
   { key: "warp", label: "扭曲", min: 0, max: 6, step: 0.05 },

@@ -43,6 +43,11 @@ export type OrbParams = {
   glowColor: string;
 };
 
+export const orbRadiusRange = {
+  min: 0.3,
+  max: 0.95,
+} as const;
+
 type StylePreset = Omit<OrbParams, "style">;
 
 const basePreset: StylePreset = {

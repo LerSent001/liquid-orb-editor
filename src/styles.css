@@ -240,9 +240,9 @@ input {
 .orb-stage[data-preview-mode="scene"] .orb-visual {
   position: relative;
   inset: auto;
-  width: 160px;
-  height: 160px;
-  flex: 0 0 160px;
+  width: 176px;
+  height: 176px;
+  flex: 0 0 176px;
   overflow: hidden;
   transform: none;
   border-radius: 50%;
@@ -251,7 +251,7 @@ input {
 
 .orb-stage[data-preview-mode="scene"] .orb-canvas,
 .orb-stage[data-preview-mode="scene"] .orb-poster {
-  transform: scale(1.4);
+  transform: scale(1);
   transform-origin: center;
 }
 

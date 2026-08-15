@@ -977,18 +977,20 @@ fn orbGlassLiquidAnim(uv01: vec2<f32>) -> vec4<f32> {
   if (u.glassEnabled > 0.5) {
     // Surface lighting stays on a thin arc. The broad visual change comes from
     // the refracted fluid above, not from a translucent white overlay.
+    // Its weights still need enough contrast to keep the exposed colour and
+    // highlight controls perceptible in the compact scene preview.
     let surfaceWidth = 0.026 + 0.055 * clamp(u.shellEdgeAlpha, 0.0, 1.0);
     let surfaceBand = (1.0 - smoothstep(0.0, surfaceWidth, edgeDepth)) * clearFa;
     let opticalRim = pow(surfaceBand, 1.8);
     col = glsOver(col, u.shellInner.rgb,
-                  opticalRim * u.glassOpacity * 0.035);
+                  opticalRim * u.glassOpacity * 0.45);
 
     let coolDirection = normalize(vec2<f32>(0.84, 0.54));
     let warmDirection = normalize(vec2<f32>(-0.62, -0.78));
     let coolSplit = glsHighlightLobe(normal, coolDirection, -0.32, 1.8);
     let warmSplit = glsHighlightLobe(normal, warmDirection, -0.28, 2.0);
     let dispersion = opticalRim * clamp(u.gloss, 0.0, 2.0)
-                     * (0.035 + 0.1 * u.shellEdgeAlpha);
+                     * (0.8 + 0.8 * u.shellEdgeAlpha);
     col = glsOver(col, u.shellMid.rgb, dispersion * coolSplit);
     col = glsOver(col, u.shellEdge.rgb, dispersion * warmSplit);
 
@@ -999,9 +1001,9 @@ fn orbGlassLiquidAnim(uv01: vec2<f32>) -> vec4<f32> {
     let keyDirection = normalize(vec2<f32>(-0.68, 0.73));
     let fillDirection = normalize(vec2<f32>(0.74, -0.67));
     let key = opticalRim * glsHighlightLobe(normal, keyDirection, 0.2, 2.8)
-              * clamp(u.sheen, 0.0, 2.0) * 0.58;
+              * clamp(u.sheen, 0.0, 2.0) * 1.4;
     let fill = opticalRim * glsHighlightLobe(normal, fillDirection, 0.4, 3.6)
-               * clamp(u.sheen, 0.0, 2.0) * 0.24;
+               * clamp(u.sheen, 0.0, 2.0) * 1.0;
     col = glsOver(col, u.sheenColor.rgb, key);
     col = glsOver(col, u.specColor.rgb, fill);
   }

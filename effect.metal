@@ -1374,7 +1374,7 @@ metal::float4 orbGlassLiquidAnim(
         metal::float3 _e240 = col_1;
         metal::float4 _e243 = u.shellInner;
         float _e247 = u.glassOpacity;
-        metal::float3 _e251 = glsOver(_e240, _e243.xyz, (opticalRim * _e247) * 0.035);
+        metal::float3 _e251 = glsOver(_e240, _e243.xyz, (opticalRim * _e247) * 0.45);
         col_1 = _e251;
         metal::float2 coolDirection = metal::normalize(metal::float2(0.84, 0.54));
         metal::float2 warmDirection = metal::normalize(metal::float2(-0.62, -0.78));
@@ -1382,7 +1382,7 @@ metal::float4 orbGlassLiquidAnim(
         float _e265 = glsHighlightLobe(_e118, warmDirection, -0.28, 2.0);
         float _e268 = u.gloss;
         float _e275 = u.shellEdgeAlpha;
-        float dispersion = (opticalRim * metal::clamp(_e268, 0.0, 2.0)) * (0.035 + (0.1 * _e275));
+        float dispersion = (opticalRim * metal::clamp(_e268, 0.0, 2.0)) * (0.8 + (0.8 * _e275));
         metal::float3 _e281 = col_1;
         metal::float4 _e284 = u.shellMid;
         metal::float3 _e287 = glsOver(_e281, _e284.xyz, dispersion * _e262);
@@ -1399,10 +1399,10 @@ metal::float4 orbGlassLiquidAnim(
         metal::float2 fillDirection = metal::normalize(metal::float2(0.74, -0.67));
         float _e328 = glsHighlightLobe(_e118, keyDirection, 0.2, 2.8);
         float _e332 = u.sheen;
-        float key = ((opticalRim * _e328) * metal::clamp(_e332, 0.0, 2.0)) * 0.58;
+        float key = ((opticalRim * _e328) * metal::clamp(_e332, 0.0, 2.0)) * 1.4;
         float _e341 = glsHighlightLobe(_e118, fillDirection, 0.4, 3.6);
         float _e345 = u.sheen;
-        float fill = ((opticalRim * _e341) * metal::clamp(_e345, 0.0, 2.0)) * 0.24;
+        float fill = ((opticalRim * _e341) * metal::clamp(_e345, 0.0, 2.0)) * 1.0;
         metal::float3 _e352 = col_1;
         metal::float4 _e355 = u.sheenColor;
         metal::float3 _e357 = glsOver(_e352, _e355.xyz, key);
