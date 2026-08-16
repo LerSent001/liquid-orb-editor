@@ -66,6 +66,11 @@ const stylePreviewUrls: Record<StyleName, string> = {
   violetEmber: violetEmberPreviewUrl,
   chromaticMetal: chromaticMetalPreviewUrl,
 };
+const compactPreviewStyles = new Set<StyleName>([
+  "blueDrop",
+  "violetEmber",
+  "chromaticMetal",
+]);
 
 type NumericKey = {
   [Key in keyof OrbParams]: OrbParams[Key] extends number ? Key : never;
@@ -606,7 +611,9 @@ export function App(): React.JSX.Element {
                       <img
                         alt=""
                         aria-hidden="true"
-                        className="preset-preview"
+                        className={`preset-preview${
+                          compactPreviewStyles.has(style) ? " preset-preview--compact" : ""
+                        }`}
                         src={stylePreviewUrls[style]}
                       />
                       <span>{styleLabels[style]}</span>

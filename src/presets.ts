@@ -394,15 +394,15 @@ export const styleLabels: Record<StyleName, string> = {
 export const styleNames: readonly StyleName[] = [
   "siri",
   "voiceWave",
-  "spectrum",
-  "aurora",
-  "frost",
-  "plasma",
-  "chrome",
-  "opal",
   "blueDrop",
   "violetEmber",
   "chromaticMetal",
+  "aurora",
+  "frost",
+  "chrome",
+  "opal",
+  "spectrum",
+  "plasma",
 ];
 
 export const styleFlowIndexes: Record<StyleName, number> = {
