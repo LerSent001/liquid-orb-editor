@@ -34,7 +34,16 @@ struct Uniforms {
     float glassEnabled;
     float glassOpacity;
     float contourDeform;
-    char _pad21[8];
+    float bandDensity;
+    float chromaticShift;
+    float metalScale;
+    float metalStretch;
+    float metalAngle;
+    float metalOffset;
+    float metalPhase;
+    float metalEvolution;
+    float metalRoughness;
+    float metalDepth;
     metal::float4 colorA;
     metal::float4 colorB;
     metal::float4 colorC;
@@ -796,6 +805,108 @@ metal::float3 glsChromeFluid(
     return _e134;
 }
 
+float glsChromaticMetalPhase(
+    metal::float2 p,
+    float t,
+    constant Uniforms& u
+) {
+    float angle = u.metalAngle * 0.01745329252;
+    float scale = metal::max(u.metalScale, 0.05);
+    float stretch = metal::mix(0.48, 1.58, metal::clamp(u.metalStretch, 0.0, 1.0));
+    metal::float2 q = glsRotate(p / scale, angle);
+    q = metal::float2(q.x / stretch, q.y * stretch);
+    float cycle = t * 0.46 + u.metalPhase * 6.28318530718;
+    float evolution = metal::clamp(u.metalEvolution, 0.0, 2.0);
+    q.x += metal::sin(q.y * 1.86 - cycle) * 0.095 * evolution;
+    q.x += metal::sin((q.x + q.y) * 1.28 + cycle * 2.0 + 1.4) * 0.045 * evolution;
+    q.y += metal::sin(q.x * 1.52 + cycle + 0.8) * 0.07 * evolution;
+    float repeats = metal::max(u.bandDensity, 1.0);
+    return q.x * repeats * 2.18
+         + metal::sin(q.y * (1.3 + repeats * 0.26) - cycle) * 0.56 * evolution
+         + metal::sin((q.x - q.y) * 1.34 + cycle * 2.0 + 1.7) * 0.27 * evolution
+         + metal::sin((q.x * 0.72 + q.y) * 2.1 - cycle * 3.0 + 0.35) * 0.11 * evolution
+         + metal::sin(cycle) * 0.1
+         + metal::sin(cycle * 3.0 + 0.7) * 0.035
+         + cycle
+         + u.metalOffset * 6.28318530718;
+}
+
+float glsChromaticMetalTone(
+    float phase,
+    constant Uniforms& u
+) {
+    float wave = 0.5 + 0.5 * metal::cos(phase);
+    float roughness = metal::clamp(u.metalRoughness, 0.0, 1.0);
+    float depth = metal::clamp(u.metalDepth, 0.0, 1.0);
+    float edge = 0.025 + roughness * 0.18;
+    float broadReflection = metal::smoothstep(0.5 - edge, 0.5 + edge, wave);
+    float hardReflection = metal::pow(wave, metal::mix(13.0, 4.0, roughness));
+    float blackFold = metal::pow(1.0 - wave, metal::mix(9.0, 3.0, roughness));
+    float body = metal::mix(wave, broadReflection, 0.2 + depth * 0.3);
+    return metal::clamp(0.018 + body * (0.46 + depth * 0.12)
+                        + hardReflection * (0.3 + depth * 0.42)
+                        - blackFold * (0.07 + depth * 0.11), 0.0, 1.0);
+}
+
+metal::float3 glsChromaticMetalSample(
+    metal::float2 p,
+    float t,
+    constant Uniforms& u
+) {
+    float phase = glsChromaticMetalPhase(p, t, u);
+    float angle = u.metalAngle * 0.01745329252;
+    metal::float2 brushP = glsRotate(p / metal::max(u.metalScale, 0.05), angle);
+    float brushed = metal::sin(brushP.y * 146.0
+                               + metal::sin(brushP.x * 11.0) * 0.58)
+                  + 0.48 * metal::sin(brushP.y * 317.0 - brushP.x * 5.0);
+    float brushAmount = 0.004 + metal::clamp(u.metalRoughness, 0.0, 1.0) * 0.014;
+    float tone = metal::clamp(glsChromaticMetalTone(phase, u)
+                              + brushed * brushAmount, 0.0, 1.0);
+    return lqRamp(tone, u.colorD.xyz, u.colorB.xyz, u.colorC.xyz, u.colorA.xyz, u);
+}
+
+metal::float3 glsChromaticMetalFluid(
+    metal::float2 p,
+    float t,
+    constant Uniforms& u
+) {
+    float angle = u.metalAngle * 0.01745329252;
+    metal::float2 splitDirection = glsRotate(metal::float2(0.0, 1.0), angle);
+    metal::float2 split = splitDirection * u.chromaticShift * 0.045;
+    metal::float3 redSample = glsChromaticMetalSample(p + split, t, u);
+    metal::float3 neutral = glsChromaticMetalSample(p, t, u);
+    metal::float3 blueSample = glsChromaticMetalSample(p - split, t, u);
+    metal::float3 optical = metal::float3(redSample.x, neutral.y, blueSample.z);
+    float fringe = metal::clamp(metal::length(optical - neutral) * 4.0, 0.0, 1.0);
+    metal::float3 color = metal::mix(neutral, optical,
+        metal::clamp(u.chromaticShift * (0.72 + fringe * 0.28), 0.0, 1.0));
+    float centerTone = glsChromaticMetalTone(glsChromaticMetalPhase(p, t, u), u);
+    float glint = metal::pow(centerTone,
+        metal::mix(12.0, 5.0, metal::clamp(u.metalRoughness, 0.0, 1.0)));
+    color = metal::mix(color, u.highlightColor.xyz,
+        glint * metal::clamp(u.metalDepth, 0.0, 1.0) * 0.06);
+    float radial2 = metal::clamp(metal::dot(p, p), 0.0, 1.0);
+    metal::float3 normal = metal::normalize(metal::float3(
+        p, metal::sqrt(metal::max(1.0 - radial2, 0.0))));
+    float roughness = metal::clamp(u.metalRoughness, 0.0, 1.0);
+    float depth = metal::clamp(u.metalDepth, 0.0, 1.0);
+    float key = metal::pow(metal::max(metal::dot(normal,
+        metal::normalize(metal::float3(-0.48, 0.62, 0.62))), 0.0),
+        metal::mix(7.0, 3.0, roughness));
+    float fill = metal::pow(metal::max(metal::dot(normal,
+        metal::normalize(metal::float3(0.7, -0.34, 0.63))), 0.0),
+        metal::mix(10.0, 4.0, roughness));
+    float limb = 1.0 - normal.z;
+    float fresnel = metal::pow(limb, 3.0);
+    float rim = metal::pow(limb, 10.0);
+    color *= 0.86 + normal.z * 0.14;
+    color = metal::mix(color, u.highlightColor.xyz, key * (0.05 + depth * 0.13));
+    color = metal::mix(color, u.colorC.xyz, fill * (0.025 + depth * 0.07));
+    color = metal::mix(color, u.colorD.xyz, fresnel * (0.12 + depth * 0.15));
+    color = metal::mix(color, u.highlightColor.xyz, rim * (0.035 + depth * 0.055));
+    return glsFinishPresetFluid(color, p, u);
+}
+
 metal::float3 glsOpalFluid(
     metal::float2 p_13,
     float t_10,
@@ -1061,6 +1172,9 @@ metal::float3 glsPresetFluid(
     }
     if (style == 21) {
         return glsVioletEmberFluid(p_16, t_13, u);
+    }
+    if (style == 22) {
+        return glsChromaticMetalFluid(p_16, t_13, u);
     }
     metal::float3 _e27 = glsFrostFluid(p_16, t_13, u);
     return _e27;

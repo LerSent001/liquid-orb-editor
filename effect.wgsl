@@ -3,8 +3,8 @@
 // The local presets use independent spatial models for Siri-like sheets,
 // symmetric colour waves, aurora curtains, frost flow, neural interference,
 // liquid chrome, opal interference, a voice membrane, a blue liquid drop, and
-// a violet molten core. The
-// legacy liquid bank remains below for compatibility with older shared shader
+// a violet molten core, plus a chromatic brushed-metal field. The legacy liquid
+// bank remains below for compatibility with older shared shader
 // code, but is not exposed as an editor preset.
 //
 // When enabled, the shell uses a signed-distance refraction profile around the
@@ -77,6 +77,16 @@ struct Uniforms {
   glassEnabled:   f32,
   glassOpacity:   f32,
   contourDeform:  f32,
+  bandDensity:    f32,
+  chromaticShift: f32,
+  metalScale:     f32,
+  metalStretch:   f32,
+  metalAngle:     f32,
+  metalOffset:    f32,
+  metalPhase:     f32,
+  metalEvolution: f32,
+  metalRoughness: f32,
+  metalDepth:     f32,
   colorA:         vec4<f32>,
   colorB:         vec4<f32>,
   colorC:         vec4<f32>,
@@ -589,6 +599,96 @@ fn glsChromeFluid(p: vec2<f32>, t: f32) -> vec3<f32> {
   return glsFinishPresetFluid(color, p);
 }
 
+fn glsChromaticMetalPhase(p: vec2<f32>, t: f32) -> f32 {
+  let angle = u.metalAngle * 0.01745329252;
+  let scale = max(u.metalScale, 0.05);
+  let stretch = mix(0.48, 1.58, clamp(u.metalStretch, 0.0, 1.0));
+  var q = glsRotate(p / scale, angle);
+  q = vec2<f32>(q.x / stretch, q.y * stretch);
+
+  // The reference advances continuously while local reflections evolve out of
+  // phase. Travelling domain waves provide that deformation without rotating
+  // the entire pattern as one rigid layer. Integer harmonics keep a clean loop.
+  let cycle = t * 0.46 + u.metalPhase * 6.28318530718;
+  let evolution = clamp(u.metalEvolution, 0.0, 2.0);
+  q.x = q.x + sin(q.y * 1.86 - cycle) * 0.095 * evolution;
+  q.x = q.x + sin((q.x + q.y) * 1.28 + cycle * 2.0 + 1.4) * 0.045 * evolution;
+  q.y = q.y + sin(q.x * 1.52 + cycle + 0.8) * 0.07 * evolution;
+
+  let repeats = max(u.bandDensity, 1.0);
+  return q.x * repeats * 2.18
+       + sin(q.y * (1.3 + repeats * 0.26) - cycle) * 0.56 * evolution
+       + sin((q.x - q.y) * 1.34 + cycle * 2.0 + 1.7) * 0.27 * evolution
+       + sin((q.x * 0.72 + q.y) * 2.1 - cycle * 3.0 + 0.35) * 0.11 * evolution
+       + sin(cycle) * 0.1
+       + sin(cycle * 3.0 + 0.7) * 0.035
+       + cycle
+       + u.metalOffset * 6.28318530718;
+}
+
+fn glsChromaticMetalTone(phase: f32) -> f32 {
+  let wave = 0.5 + 0.5 * cos(phase);
+  let roughness = clamp(u.metalRoughness, 0.0, 1.0);
+  let depth = clamp(u.metalDepth, 0.0, 1.0);
+  let edge = 0.025 + roughness * 0.18;
+  let broadReflection = smoothstep(0.5 - edge, 0.5 + edge, wave);
+  let hardReflection = pow(wave, mix(13.0, 4.0, roughness));
+  let blackFold = pow(1.0 - wave, mix(9.0, 3.0, roughness));
+  let body = mix(wave, broadReflection, 0.2 + depth * 0.3);
+  return clamp(0.018 + body * (0.46 + depth * 0.12)
+               + hardReflection * (0.3 + depth * 0.42)
+               - blackFold * (0.07 + depth * 0.11), 0.0, 1.0);
+}
+
+fn glsChromaticMetalSample(p: vec2<f32>, t: f32) -> vec3<f32> {
+  let phase = glsChromaticMetalPhase(p, t);
+  let angle = u.metalAngle * 0.01745329252;
+  let brushP = glsRotate(p / max(u.metalScale, 0.05), angle);
+  let brushed = sin(brushP.y * 146.0 + sin(brushP.x * 11.0) * 0.58)
+              + 0.48 * sin(brushP.y * 317.0 - brushP.x * 5.0);
+  let brushAmount = 0.004 + clamp(u.metalRoughness, 0.0, 1.0) * 0.014;
+  let tone = clamp(glsChromaticMetalTone(phase) + brushed * brushAmount, 0.0, 1.0);
+  return lqRamp(tone, u.colorD.rgb, u.colorB.rgb, u.colorC.rgb, u.colorA.rgb);
+}
+
+fn glsChromaticMetalFluid(p: vec2<f32>, t: f32) -> vec3<f32> {
+  let angle = u.metalAngle * 0.01745329252;
+  let splitDirection = glsRotate(vec2<f32>(0.0, 1.0), angle);
+  let split = splitDirection * u.chromaticShift * 0.045;
+  let redSample = glsChromaticMetalSample(p + split, t);
+  let neutral = glsChromaticMetalSample(p, t);
+  let blueSample = glsChromaticMetalSample(p - split, t);
+  let optical = vec3<f32>(redSample.r, neutral.g, blueSample.b);
+  let fringe = clamp(length(optical - neutral) * 4.0, 0.0, 1.0);
+  var color = mix(neutral, optical,
+                  clamp(u.chromaticShift * (0.72 + fringe * 0.28), 0.0, 1.0));
+  let centerTone = glsChromaticMetalTone(glsChromaticMetalPhase(p, t));
+  let glint = pow(centerTone, mix(12.0, 5.0, clamp(u.metalRoughness, 0.0, 1.0)));
+  color = mix(color, u.highlightColor.rgb,
+              glint * clamp(u.metalDepth, 0.0, 1.0) * 0.06);
+
+  // A second, sphere-scale reflection layer keeps the material metallic even
+  // when the optional glass shell is disabled. It modulates the animated ramp
+  // instead of raising exposure, preserving dark chrome between reflections.
+  let radial2 = clamp(dot(p, p), 0.0, 1.0);
+  let normal = normalize(vec3<f32>(p, sqrt(max(1.0 - radial2, 0.0))));
+  let roughness = clamp(u.metalRoughness, 0.0, 1.0);
+  let depth = clamp(u.metalDepth, 0.0, 1.0);
+  let key = pow(max(dot(normal, normalize(vec3<f32>(-0.48, 0.62, 0.62))), 0.0),
+                mix(7.0, 3.0, roughness));
+  let fill = pow(max(dot(normal, normalize(vec3<f32>(0.7, -0.34, 0.63))), 0.0),
+                 mix(10.0, 4.0, roughness));
+  let limb = 1.0 - normal.z;
+  let fresnel = pow(limb, 3.0);
+  let rim = pow(limb, 10.0);
+  color = color * (0.86 + normal.z * 0.14);
+  color = mix(color, u.highlightColor.rgb, key * (0.05 + depth * 0.13));
+  color = mix(color, u.colorC.rgb, fill * (0.025 + depth * 0.07));
+  color = mix(color, u.colorD.rgb, fresnel * (0.12 + depth * 0.15));
+  color = mix(color, u.highlightColor.rgb, rim * (0.035 + depth * 0.055));
+  return glsFinishPresetFluid(color, p);
+}
+
 fn glsOpalFluid(p: vec2<f32>, t: f32) -> vec3<f32> {
   let q = p * (0.8 + u.zoom * 0.64);
   let complexity = 0.76 + u.warp * 0.085;
@@ -736,6 +836,7 @@ fn glsPresetFluid(p: vec2<f32>, style: i32, t: f32) -> vec3<f32> {
   if (style == 19) { return glsVoiceWaveFluid(p, t); }
   if (style == 20) { return glsBlueDropFluid(p, t); }
   if (style == 21) { return glsVioletEmberFluid(p, t); }
+  if (style == 22) { return glsChromaticMetalFluid(p, t); }
   return glsFrostFluid(p, t);
 }
 

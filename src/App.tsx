@@ -27,6 +27,7 @@ import posterUrl from "../poster.png";
 import auroraPreviewUrl from "./assets/presets/aurora.png";
 import blueDropPreviewUrl from "./assets/presets/blueDrop.png";
 import chromePreviewUrl from "./assets/presets/chrome.png";
+import chromaticMetalPreviewUrl from "./assets/presets/chromaticMetal.png";
 import frostPreviewUrl from "./assets/presets/frost.png";
 import opalPreviewUrl from "./assets/presets/opal.png";
 import plasmaPreviewUrl from "./assets/presets/plasma.png";
@@ -63,6 +64,7 @@ const stylePreviewUrls: Record<StyleName, string> = {
   opal: opalPreviewUrl,
   blueDrop: blueDropPreviewUrl,
   violetEmber: violetEmberPreviewUrl,
+  chromaticMetal: chromaticMetalPreviewUrl,
 };
 
 type NumericKey = {
@@ -119,15 +121,118 @@ const sharpStyles: readonly StyleName[] = [
   "blueDrop",
   "violetEmber",
 ];
+const standardShapeStyles = styleNames.filter((style) => style !== "chromaticMetal");
+const chromaticMetalStyles: readonly StyleName[] = ["chromaticMetal"];
 
 const numericSpecs: readonly NumericSpec[] = [
   { key: "speed", label: "速度", min: 0, max: 3, step: 0.01 },
   { key: "radius", label: "半径", ...orbRadiusRange, step: 0.01 },
-  { key: "contourDeform", label: "轮廓形变", min: 0, max: 1, step: 0.01 },
-  { key: "zoom", label: "缩放", min: 0.05, max: 1, step: 0.01 },
-  { key: "warp", label: "扭曲", min: 0, max: 6, step: 0.05 },
+  {
+    key: "contourDeform",
+    label: "轮廓形变",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    enabledStyles: standardShapeStyles,
+  },
+  {
+    key: "zoom",
+    label: "缩放",
+    min: 0.05,
+    max: 1,
+    step: 0.01,
+    enabledStyles: standardShapeStyles,
+  },
+  {
+    key: "warp",
+    label: "扭曲",
+    min: 0,
+    max: 6,
+    step: 0.05,
+    enabledStyles: standardShapeStyles,
+  },
   { key: "ridgeAmt", label: "脊线", min: 0, max: 1, step: 0.01, enabledStyles: ridgeStyles },
   { key: "sharp", label: "锐度", min: 0.5, max: 6, step: 0.05, enabledStyles: sharpStyles },
+  {
+    key: "bandDensity",
+    label: "重复次数",
+    min: 1,
+    max: 6,
+    step: 0.1,
+    enabledStyles: chromaticMetalStyles,
+  },
+  {
+    key: "metalDepth",
+    label: "金属深度",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    enabledStyles: chromaticMetalStyles,
+  },
+  {
+    key: "metalRoughness",
+    label: "表面粗糙度",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    enabledStyles: chromaticMetalStyles,
+  },
+  {
+    key: "chromaticShift",
+    label: "RGB 分离",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    enabledStyles: chromaticMetalStyles,
+  },
+  {
+    key: "metalScale",
+    label: "图案缩放",
+    min: 0.2,
+    max: 2,
+    step: 0.01,
+    enabledStyles: chromaticMetalStyles,
+  },
+  {
+    key: "metalStretch",
+    label: "纵横拉伸",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    enabledStyles: chromaticMetalStyles,
+  },
+  {
+    key: "metalAngle",
+    label: "流带角度",
+    min: -180,
+    max: 180,
+    step: 1,
+    enabledStyles: chromaticMetalStyles,
+  },
+  {
+    key: "metalOffset",
+    label: "图案偏移",
+    min: -1,
+    max: 1,
+    step: 0.01,
+    enabledStyles: chromaticMetalStyles,
+  },
+  {
+    key: "metalPhase",
+    label: "循环相位",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    enabledStyles: chromaticMetalStyles,
+  },
+  {
+    key: "metalEvolution",
+    label: "演化幅度",
+    min: 0,
+    max: 2,
+    step: 0.02,
+    enabledStyles: chromaticMetalStyles,
+  },
   { key: "shade", label: "明暗", min: 0, max: 1.5, step: 0.01 },
   { key: "exposure", label: "曝光", min: 0.2, max: 3, step: 0.02 },
   { key: "sheen", label: "边缘高光", min: 0, max: 2, step: 0.02 },
@@ -434,7 +539,11 @@ export function App(): React.JSX.Element {
 
     return (
       <Slider
-        baseValue={effectDefaults[key]}
+        baseValue={
+          params.style === "chromaticMetal"
+            ? stylePresets.chromaticMetal[key]
+            : effectDefaults[key]
+        }
         key={key}
         max={spec.max}
         min={spec.min}
@@ -637,6 +746,16 @@ export function App(): React.JSX.Element {
               {renderSlider("warp")}
               {renderSlider("ridgeAmt")}
               {renderSlider("sharp")}
+              {renderSlider("metalDepth")}
+              {renderSlider("metalRoughness")}
+              {renderSlider("chromaticShift")}
+              {renderSlider("metalScale")}
+              {renderSlider("metalStretch")}
+              {renderSlider("metalAngle")}
+              {renderSlider("bandDensity")}
+              {renderSlider("metalOffset")}
+              {renderSlider("metalPhase")}
+              {renderSlider("metalEvolution")}
             </PanelSection>
 
             <PanelSection

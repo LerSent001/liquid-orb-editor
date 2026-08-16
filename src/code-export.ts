@@ -181,9 +181,9 @@ private final class LiquidOrbRenderer: NSObject, MTKViewDelegate {
         view.enableSetNeedsDisplay = false
         view.isPaused = false
         view.clearColor = MTLClearColor(
-            red: Double(uniforms[64]),
-            green: Double(uniforms[65]),
-            blue: Double(uniforms[66]),
+            red: Double(uniforms[72]),
+            green: Double(uniforms[73]),
+            blue: Double(uniforms[74]),
             alpha: 1
         )
 

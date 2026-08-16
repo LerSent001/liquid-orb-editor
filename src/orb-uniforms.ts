@@ -59,6 +59,16 @@ export function writeOrbUniforms(
       params.glassEnabled ? 1 : 0,
       params.glassOpacity,
       params.contourDeform,
+      params.bandDensity,
+      params.chromaticShift,
+      params.metalScale,
+      params.metalStretch,
+      params.metalAngle,
+      params.metalOffset,
+      params.metalPhase,
+      params.metalEvolution,
+      params.metalRoughness,
+      params.metalDepth,
     ],
     3,
   );
@@ -78,11 +88,11 @@ export function writeOrbUniforms(
     params.glowColor,
     ...paletteStops,
   ];
-  colors.forEach((hex, index) => target.set(rgb(hex), 24 + index * 4));
+  colors.forEach((hex, index) => target.set(rgb(hex), 32 + index * 4));
 }
 
 export function createOrbUniformSnapshot(params: OrbParams): number[] {
-  const values = new Float32Array(120);
+  const values = new Float32Array(128);
   writeOrbUniforms(values, 1, 1, 0, params);
   return Array.from(values);
 }

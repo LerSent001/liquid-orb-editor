@@ -8,7 +8,8 @@ export type StyleName =
   | "chrome"
   | "opal"
   | "blueDrop"
-  | "violetEmber";
+  | "violetEmber"
+  | "chromaticMetal";
 
 export type OrbParams = {
   style: StyleName;
@@ -16,6 +17,16 @@ export type OrbParams = {
   speed: number;
   radius: number;
   contourDeform: number;
+  bandDensity: number;
+  chromaticShift: number;
+  metalScale: number;
+  metalStretch: number;
+  metalAngle: number;
+  metalOffset: number;
+  metalPhase: number;
+  metalEvolution: number;
+  metalRoughness: number;
+  metalDepth: number;
   zoom: number;
   warp: number;
   ridgeAmt: number;
@@ -55,6 +66,16 @@ const basePreset: StylePreset = {
   speed: 1,
   radius: 0.72,
   contourDeform: 0,
+  bandDensity: 2,
+  chromaticShift: 0.42,
+  metalScale: 0.77,
+  metalStretch: 0.23,
+  metalAngle: 65,
+  metalOffset: 0,
+  metalPhase: 0,
+  metalEvolution: 1,
+  metalRoughness: 0.22,
+  metalDepth: 0.25,
   zoom: 0.3,
   warp: 3,
   ridgeAmt: 0.5,
@@ -320,6 +341,40 @@ export const stylePresets: Record<StyleName, StylePreset> = {
     canvasColor: "#030006",
     glowColor: "#A52EFF",
   },
+  chromaticMetal: {
+    ...basePreset,
+    speed: 1.12,
+    radius: 0.72,
+    bandDensity: 2,
+    chromaticShift: 0.42,
+    metalScale: 0.77,
+    metalStretch: 0.23,
+    metalAngle: 65,
+    metalOffset: 0,
+    metalPhase: 0,
+    metalEvolution: 1,
+    metalRoughness: 0.16,
+    metalDepth: 0.38,
+    shade: 0.1,
+    sheen: 0.14,
+    gloss: 0.46,
+    glassOpacity: 0.54,
+    shellMidAlpha: 0.2,
+    shellEdgeAlpha: 0.16,
+    exposure: 1.08,
+    colorA: "#FBFCFB",
+    colorB: "#7F8683",
+    colorC: "#D6DAD8",
+    colorD: "#33373A",
+    highlightColor: "#FFFFFF",
+    shellInner: "#F7FCFF",
+    shellMid: "#6EDCFF",
+    shellEdge: "#FF806D",
+    sheenColor: "#F7FCFF",
+    specColor: "#D9F3FF",
+    canvasColor: "#050606",
+    glowColor: "#BDEFFF",
+  },
 };
 
 export const styleLabels: Record<StyleName, string> = {
@@ -333,6 +388,7 @@ export const styleLabels: Record<StyleName, string> = {
   opal: "虹彩欧泊",
   blueDrop: "蓝晶液滴",
   violetEmber: "紫焰流核",
+  chromaticMetal: "色差液态金属",
 };
 
 export const styleNames: readonly StyleName[] = [
@@ -346,6 +402,7 @@ export const styleNames: readonly StyleName[] = [
   "opal",
   "blueDrop",
   "violetEmber",
+  "chromaticMetal",
 ];
 
 export const styleFlowIndexes: Record<StyleName, number> = {
@@ -359,6 +416,7 @@ export const styleFlowIndexes: Record<StyleName, number> = {
   frost: 15,
   blueDrop: 20,
   violetEmber: 21,
+  chromaticMetal: 22,
 };
 
 export const effectDefaults: OrbParams = {

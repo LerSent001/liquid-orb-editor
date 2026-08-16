@@ -81,7 +81,7 @@ export function createOrbRenderer({
       },
       primitive: { topology: "triangle-list" },
     });
-    const values = new Float32Array(120);
+    const values = new Float32Array(128);
     const uniformBuffer = device.createBuffer({
       size: values.byteLength,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,

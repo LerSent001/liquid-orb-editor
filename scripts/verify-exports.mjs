@@ -96,10 +96,41 @@ try {
       .map(Number);
     assert.deepEqual(webSeed, expectedSeed, `${style}: Web 参数与编辑器不一致`);
     assert.deepEqual(swiftSeed, expectedSeed, `${style}: Swift 参数与编辑器不一致`);
+    assert.equal(webSeed.length, 128, `${style}: uniform 长度错误`);
     assert.equal(webSeed[15], presets.styleFlowIndexes[style], `${style}: Web 分发索引错误`);
     assert.equal(swiftSeed[15], presets.styleFlowIndexes[style], `${style}: Swift 分发索引错误`);
     assert.equal(webSeed[19], 1, `${style}: Web 默认玻璃罩未开启`);
     assert.equal(swiftSeed[19], 1, `${style}: Swift 默认玻璃罩未开启`);
+
+    if (style === "chromaticMetal") {
+      const metalUniforms = [
+        [22, "bandDensity", "重复次数"],
+        [23, "chromaticShift", "RGB 分离"],
+        [24, "metalScale", "图案缩放"],
+        [25, "metalStretch", "纵横拉伸"],
+        [26, "metalAngle", "流带角度"],
+        [27, "metalOffset", "图案偏移"],
+        [28, "metalPhase", "循环相位"],
+        [29, "metalEvolution", "演化幅度"],
+        [30, "metalRoughness", "表面粗糙度"],
+        [31, "metalDepth", "金属深度"],
+      ];
+      for (const [index, key, label] of metalUniforms) {
+        assert.ok(
+          Math.abs(webSeed[index] - params[key]) < 0.000001,
+          `色差金属：${label}未写入 uniform`,
+        );
+        assert.match(wgsl, new RegExp(`\\b${key}:\\s+f32`), `WGSL 缺少 ${label} 参数`);
+        assert.match(metal, new RegExp(`float ${key};`), `Metal 缺少 ${label} 参数`);
+      }
+      assert.match(wgsl, /let cycle = t \* 0\.46 \+ u\.metalPhase/, "WGSL 动画未使用循环相位");
+      assert.match(metal, /float cycle = t \* 0\.46 \+ u\.metalPhase/, "Metal 动画未使用循环相位");
+      assert.match(wgsl, /\+ cycle\n\s+\+ u\.metalOffset/, "WGSL 主流场缺少单向相位推进");
+      assert.match(metal, /\+ cycle\n\s+\+ u\.metalOffset/, "Metal 主流场缺少单向相位推进");
+      const loopDuration = (Math.PI * 2) / (0.46 * params.speed);
+      assert.ok(loopDuration >= 11.5 && loopDuration <= 13, "色差金属默认循环时长偏离参考视频");
+      assert.match(swiftCode, /red: Double\(uniforms\[72\]\)/, "Swift 背景颜色索引未同步");
+    }
 
     const webShaderMatch = webCode.match(/^    const shaderSource = (.+);$/m);
     assert.ok(webShaderMatch, `${style}: Web shader 源码缺失`);
@@ -120,6 +151,40 @@ try {
     assert.match(webCode, /device\.lost\.then/, `${style}: Web 设备丢失处理缺失`);
     assert.match(webCode, /uncapturederror/, `${style}: Web GPU 错误处理缺失`);
   }
+
+  const adjustedMetal = {
+    style: "chromaticMetal",
+    ...presets.stylePresets.chromaticMetal,
+    speed: 1.17,
+    bandDensity: 4.3,
+    chromaticShift: 0.68,
+    metalScale: 1.31,
+    metalStretch: 0.74,
+    metalAngle: -38,
+    metalOffset: -0.27,
+    metalPhase: 0.63,
+    metalEvolution: 1.46,
+    metalRoughness: 0.57,
+    metalDepth: 0.81,
+    colorA: "#DDE8E4",
+  };
+  const adjustedExpected = uniforms.createOrbUniformSnapshot(adjustedMetal);
+  const adjustedWeb = createWebExport(adjustedMetal);
+  const adjustedSwift = createSwiftExport(adjustedMetal);
+  const adjustedWebMatch = adjustedWeb.match(/const uniformSeed = (\[[^;]+\]);/);
+  const adjustedSwiftMatch = adjustedSwift.match(
+    /private let orbUniformSeed: \[Float\] = \[([\s\S]*?)\]/,
+  );
+  assert.ok(adjustedWebMatch, "调参后的 Web uniform seed 缺失");
+  assert.ok(adjustedSwiftMatch, "调参后的 Swift uniform seed 缺失");
+  const adjustedWebSeed = JSON.parse(adjustedWebMatch[1]);
+  const adjustedSwiftSeed = adjustedSwiftMatch[1]
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map(Number);
+  assert.deepEqual(adjustedWebSeed, adjustedExpected, "调参后的 Web 导出与编辑器不一致");
+  assert.deepEqual(adjustedSwiftSeed, adjustedExpected, "调参后的 Swift 导出与编辑器不一致");
 
   console.log(
     `Verified ${presets.styleNames.length} presets: editor, WebGPU, and SwiftUI parameters are identical.`,
