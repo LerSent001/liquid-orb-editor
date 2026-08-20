@@ -321,6 +321,8 @@ input {
   left: 50%;
   z-index: 2;
   display: flex;
+  align-items: center;
+  gap: 8px;
   transform: translateX(-50%);
 }
 
@@ -330,6 +332,27 @@ input {
   background: color-mix(in oklab, var(--background) 78%, transparent);
   box-shadow: 0 12px 32px -18px rgb(0 0 0 / 70%);
   backdrop-filter: blur(14px) saturate(130%);
+}
+
+.github-link {
+  border-color: rgb(255 255 255 / 12%);
+  color: rgb(255 255 255 / 72%);
+  background: color-mix(in oklab, var(--background) 78%, transparent);
+  box-shadow: 0 12px 32px -18px rgb(0 0 0 / 70%);
+  backdrop-filter: blur(14px) saturate(130%);
+}
+
+.github-link svg {
+  opacity: 0.72 !important;
+}
+
+.github-link:hover {
+  border-color: rgb(255 255 255 / 24%);
+  color: #fff;
+}
+
+.github-link:hover svg {
+  opacity: 1 !important;
 }
 
 .preset-dock,

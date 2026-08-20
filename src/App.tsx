@@ -1,9 +1,14 @@
 import * as React from "react";
-import { CodeIcon, CopySimpleIcon } from "@phosphor-icons/react";
+import { CodeIcon, CopySimpleIcon, GithubLogoIcon } from "@phosphor-icons/react";
 
-import { Button } from "@/toolcraft/ui/components/primitives/button";
+import { Button, buttonVariants } from "@/toolcraft/ui/components/primitives/button";
 import { Input } from "@/toolcraft/ui/components/primitives/input";
-import { TooltipProvider } from "@/toolcraft/ui/components/primitives/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/toolcraft/ui/components/primitives/tooltip";
 import { ControlFieldLabel } from "@/toolcraft/ui/components/control-layout";
 import { SwitchControl as Switch } from "@/toolcraft/ui/components/controls/boolean/boolean-controls";
 import { SegmentedControl } from "@/toolcraft/ui/components/controls/segmented/segmented-control";
@@ -679,6 +684,22 @@ export function App(): React.JSX.Element {
               <CodeIcon data-icon="inline-start" />
               复制代码
             </Button>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <a
+                    aria-label="在 GitHub 查看源码"
+                    className={`${buttonVariants({ size: "icon-lg", variant: "outline" })} github-link`}
+                    href="https://github.com/LerSent001/orb"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  />
+                }
+              >
+                <GithubLogoIcon aria-hidden="true" weight="fill" />
+              </TooltipTrigger>
+              <TooltipContent side="top">在 GitHub 查看源码</TooltipContent>
+            </Tooltip>
           </div>
         </section>
 
